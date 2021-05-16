@@ -4,7 +4,7 @@ const MongoClient = require("mongodb").MongoClient;
 const port = process.env.PORT || 5000;
 // Mongodb 
 const uri = "mongodb://127.0.0.1:27017";
-const dbName = "mydatabase";
+const dbName = "testDB";
 var database;
 
 const app = express();
@@ -12,8 +12,54 @@ const app = express();
 app.use(express.json());
 
 app.get("/api/books", (req, res) => {
-    console.log(database.collection("users").find({}).toArray());
-    res.send("cmamut");
+    // Finding all the collection and retrieve that as an array of documents
+    database.collection("books").find({}).sort({id: 1}).toArray((err, result) => {
+        if(err) throw err
+        res.send(result)
+    });
+});
+
+app.post("/api/books/addOneBook", (req, res) => {
+    let result = database.collection("books").find({}).sort({id : -1}).limit(1)
+    // First we find the collections, and we will use the last id to create the new item and add it to the db
+    result.forEach(item => {
+        if(item){
+            let newBook = {
+                id: item.id + 1,
+                title: req.body.title
+            };
+            // here we will insert the book as a document to the collection 
+            database.collection("books").insertOne(newBook, (error, result) => {
+                if(error) res.status(500).send("There was an error adding the new book")
+                res.send("The book was added succesfully")
+            });
+        }
+    });
+});
+
+app.put("/api/books/:id",(req,res) => {
+    // Update a document, we firstly find the one that we want to change, then create a dataset
+    // and after we will change it.
+    let findById = { id: parseInt(req.params.id) }
+    let updatedBook = {
+        id: parseInt(req.params.id),
+        title: req.body.title
+    };
+    let dataSet = {
+        $set : updatedBook
+    };
+    database.collection("books").updateOne(findById, dataSet, (err,result) => {
+        // The update never fails, at least on SQL, but we will add this in case of any error
+        if(err) res.status(500).send("There was an error updating the book")
+        res.send(updatedBook)
+    }); 
+})
+
+app.delete("/api/books/:id", (req, res) => {
+    database.collection("books").deleteOne({id: parseInt(req.params.id)}, (err, result) => {
+        if(err) console.log(err)
+        res.send("Book no longer exists")
+    });
 });
 
 app.listen(port, () => {
@@ -22,5 +68,5 @@ app.listen(port, () => {
             throw error
         database = result.db(dbName);
         console.log(`Connection to ${dbName} stablished on port ${port}`);
-    })
+    });
 })
