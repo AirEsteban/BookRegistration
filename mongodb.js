@@ -1,5 +1,7 @@
 const express = require("express")
 const MongoClient = require("mongodb").MongoClient;
+const swaggerJSDoc = require("swagger-jsdoc")
+const swaggerUi = require("swagger-ui-express")
 
 const port = process.env.PORT || 5000;
 // Mongodb 
@@ -7,10 +9,61 @@ const uri = "mongodb://127.0.0.1:27017";
 const dbName = "testDB";
 var database;
 
+// Swagger
+
+const options = {
+    definition: {
+        openapi: "3.0.0",
+        info: {
+            title: "NodeJS CRUD API",
+            version: "1.0.0"
+        },
+        servers: [
+            { url: "http://localhost:5000"}
+        ]
+    },
+    apis: ['./mongodb.js']
+};
+
+const swaggerSpec = swaggerJSDoc(options);
+
 const app = express();
 
+// Swagger url
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+
+// Encode
 app.use(express.json());
 
+/**
+ * @swagger
+ *   components:
+ *      schema:
+ *          Book: 
+ *              type: object
+ *              properties:
+ *                  id:
+ *                      type: integer
+ *                  title:
+ *                      type: string
+ */
+
+/**
+ * @swagger
+ * /api/books:
+ *  get:
+ *      summary: To get all books from MongoDB
+ *      description: This api is used to fetch data from MongoDB
+ *      responses: 
+ *           200:
+ *               description: This api is used to fetch data from MongoDB
+ *               content: 
+ *                  application/json: 
+ *                      schema: 
+ *                          type: array
+ *                          items: 
+ *                              $ref: '#components/schema/Book'
+ */
 app.get("/api/books", (req, res) => {
     // Finding all the collection and retrieve that as an array of documents
     database.collection("books").find({}).sort({id: 1}).toArray((err, result) => {
