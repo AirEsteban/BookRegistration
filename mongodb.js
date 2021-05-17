@@ -2,6 +2,7 @@ const express = require("express")
 const MongoClient = require("mongodb").MongoClient;
 const swaggerJSDoc = require("swagger-jsdoc")
 const swaggerUi = require("swagger-ui-express")
+const cors = require("cors")
 
 const port = process.env.PORT || 5000;
 // Mongodb 
@@ -28,6 +29,9 @@ const options = {
 const swaggerSpec = swaggerJSDoc(options);
 
 const app = express();
+
+// CORS problem
+app.use(cors())
 
 // Swagger url
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec))
@@ -67,6 +71,14 @@ app.use(express.json());
 app.get("/api/books", (req, res) => {
     // Finding all the collection and retrieve that as an array of documents
     database.collection("books").find({}).sort({id: 1}).toArray((err, result) => {
+        if(err) throw err
+        res.send(result)
+    });
+});
+
+app.get("/api/books/:id", (req, res) => {
+    // Finding all the collection and retrieve that as an array of documents
+    database.collection("books").find({id: parseInt(req.params.id)}).sort({id: 1}).toArray((err, result) => {
         if(err) throw err
         res.send(result)
     });
